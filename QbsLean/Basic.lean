@@ -419,6 +419,15 @@ theorem giry_monad_unit {X : Type*} [qbs X] : ∀ μ : qbs_ProbMeasure X, (μ >>
 
 theorem giry_monad_unit_bind {X : Type*} [qbs X] : ∀ x : X, ∀ f : qbs_morph X (qspace X), ((dirac x) >>= f) = f.coe x := sorry
 
+
+
+
+
+
+/- Here's some explicit category theory below, I don't find Lean's mechanisms to be very useful at all for these -/
+
+
+
 open CategoryTheory
 
 @[to_additive existing qbs_category]
@@ -453,7 +462,6 @@ instance : ConcreteCategory qbs_category := by
 instance : Inhabited qbs_category := ⟨qbs_category.of Empty⟩
 attribute [local instance] ConcreteCategory.instFunLike
 
-/- TODO ADJUNCTION -/
 end qbs_category
 
 
