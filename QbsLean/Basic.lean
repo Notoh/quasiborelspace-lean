@@ -1,6 +1,6 @@
 import Mathlib
 
-open Set Function Encodable Equiv MeasureTheory Classical
+open Set Function Encodable Equiv MeasureTheory Classical Measure
 
 instance : MeasurableSpace ℝ := Real.measurableSpace
 instance : MeasurableSpace ℕ := Nat.instMeasurableSpace
@@ -361,7 +361,7 @@ structure qbs_ProbMeasure (X : Type*) [qbs X] where
   meas : ProbabilityMeasure ℝ
   rv : qbs_rv X
 
-def qbs_ProbMeasure.of (X : Type*) [qbs X] (α : ProbabilityMeasure ℝ) (f : qbs_rv X) : qbs_ProbMeasure X := { meas := α, rv := f}
+def qbs_ProbMeasure.of (X : Type*) [qbs X] (f : qbs_rv X) (α : ProbabilityMeasure ℝ) : qbs_ProbMeasure X := { meas := α, rv := f}
 
 noncomputable def integrate [qbs X] (μ : qbs_ProbMeasure X) (f : qbs_morph X ℝ) : ℝ := ∫ x, (f.coe (μ.rv.coe x)) ∂ μ.meas 
 
@@ -380,11 +380,13 @@ def qbs_measures (X : Type*) [qbs X] := Quotient.mk (qbs_measures.setoid X)
 abbrev qspace (X : Type*) [qbs X] := Quotient (qbs_measures.setoid X)
 
 def qbs_measures_qbs (X : Type*) [qbs X] : qbs (qspace X) where
-  in_mx' β := ∃ α : qbs_rv X, ∃ g : ℝ → ProbabilityMeasure ℝ, ∀ r : ℝ, β r = Quotient.mk'' (qbs_ProbMeasure.of X (g r) α) 
+  in_mx' β := ∃ α : qbs_rv X, ∃ g : ℝ → ProbabilityMeasure ℝ, ∀ r : ℝ, β r = Quotient.mk'' (qbs_ProbMeasure.of X α (g r)) 
   comp_meas := sorry
   const := sorry
   disjoint_union := sorry
 
+noncomputable def pick_rv {X : Type*} [qbs X] (f : ℝ → qspace X) (H :  (qbs_measures_qbs X).in_mx' f) := (Classical.choose H)
+noncomputable def pick_prob {X : Type*} [qbs X] (f : ℝ → qspace X) (H : (qbs_measures_qbs X).in_mx' f) : ℝ → ProbabilityMeasure ℝ := (Classical.choose (Classical.choose_spec H))
 
 instance [qbs X] : qbs (qspace X) := qbs_measures_qbs X
 
@@ -393,13 +395,29 @@ noncomputable def dirac {X : Type*} (x : X) [qbs X] : qbs_ProbMeasure X := {
   rv := ⟨(fun (r : ℝ) => x), by { apply in_mx_const }⟩ 
 }
 
+noncomputable def giry_bind [MeasurableSpace X] [MeasurableSpace Y] (f: X → ProbabilityMeasure Y) (μ : ProbabilityMeasure X) : ProbabilityMeasure Y :=
+  ⟨Measure.bind μ (ProbabilityMeasure.toMeasure ∘ f), by { 
+  rw [isProbabilityMeasure_iff]; rw [bind_apply]; have H : ∀ a : X, ((ProbabilityMeasure.toMeasure ∘ f) a) univ = 1;
+  intros a; rw [<- isProbabilityMeasure_iff]; have H2 : IsProbabilityMeasure (f a).toMeasure := (f a).prop;
+  apply H2; aesop; measurability; sorry}⟩ /- This is a stupid implementation detail in the implementation of the Giry monad in Mathlib, and not actually axiomatizing anything-/
+
 noncomputable def qbs_giry_unit (X : Type*) [qbs X] : qbs_morph X (qspace X) :=
   ⟨fun x => Quotient.mk'' (dirac x), by { sorry }⟩ 
 
-def qbs_giry_inst {X Y : Type*} [qbs X] [qbs Y] (f : qbs_morph X (qspace Y)) (μ : qbs_ProbMeasure X) : 
+lemma dumb_coercion {X Y : Type*} [qbs X] [qbs Y] (f : qbs_morph X (qspace Y)) (α : qbs_rv X) : (qbs_measures_qbs Y).in_mx' (f.coe ∘ α.coe) := by {
+    unfold qbs_rv qbs_morph at *; aesop;
+}
 
-def qbs_giry_bind {X Y : Type*} [qbs X] [qbs Y] (f : qbs_morph X (qspace Y)) (μ : qbs_ProbMeasure X) : qspace Y :=
-  Quotient.mk'' (qbs_ProbMeasure.of Y μ.meas _)
+noncomputable def qbs_giry_bind {X Y : Type*} [qbs X] [qbs Y] (f : qbs_morph X (qspace Y)) (μ : qbs_ProbMeasure X) : qspace Y :=
+  Quotient.mk'' (qbs_ProbMeasure.of Y (pick_rv (f.coe ∘ (μ.rv).coe) (dumb_coercion f μ.rv)) 
+  (giry_bind (pick_prob (f.coe ∘ (μ.rv).coe) (dumb_coercion f μ.rv)) μ.meas)) 
+/- TODO I think something is subtly wrong above since we are making two different choices to instantiate pick_rv and pick_prob whereas they should be the same pair-/
+
+notation μ " >>= " f => qbs_giry_bind f μ
+
+theorem giry_monad_unit {X : Type*} [qbs X] : ∀ μ : qbs_ProbMeasure X, (μ >>= qbs_giry_unit X) = Quotient.mk'' μ := sorry
+
+theorem giry_monad_unit_bind {X : Type*} [qbs X] : ∀ x : X, ∀ f : qbs_morph X (qspace X), ((dirac x) >>= f) = f.coe x := sorry
 
 open CategoryTheory
 
