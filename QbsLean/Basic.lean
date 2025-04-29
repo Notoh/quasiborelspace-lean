@@ -1,3 +1,21 @@
+/- Copyright (c) 2025 Alex Pawelko
+
+Redistribution and use in source and binary forms, with or without modification, are permitted provided that the following conditions are met:
+
+1. Redistributions of source code must retain the above copyright notice, this list of conditions and the following disclaimer.
+
+2. Redistributions in binary form must reproduce the above copyright notice, this list of conditions and the following disclaimer in the documentation and/or other materials provided with the distribution.
+
+3. Neither the name of the copyright holder nor the names of its contributors may be used to endorse or promote products derived from this software without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS “AS IS”
+AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO,
+THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
+INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION)
+HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.-/
 import Mathlib
 
 open Set Function Encodable Equiv MeasureTheory Classical Measure
@@ -11,14 +29,14 @@ variable {X Y Z : Type*}
 def disjoint_function {X : Type*} (P : ℝ → ℕ) (i: ℕ → (ℝ → X)) : ℝ → X :=
   (fun (r : ℝ) => (i ∘ P) r r)
 
-class qbs (X : Type*) where 
+class qbs (X : Type*) where
   /-- predicate asking if a function ℝ → X is ``measurable'', use in_mx below instead-/
   in_mx' : (ℝ → X) → Prop
   /- Postcomposition of something in MX with a measurable function is in MX -/
   comp_meas : ∀ (f : ℝ → ℝ) (g : ℝ → X), in_mx' g → (Measurable f) → (in_mx' (g ∘ f))
   /- constant functions are in MX -/
   const : ∀ c : X, in_mx' (Function.const ℝ c)
-  /- disjoint union, if α_i is a sequence of functions in MX, given any measurable partition function P of ℝ, the function that acts as α_i on each piece 
+  /- disjoint union, if α_i is a sequence of functions in MX, given any measurable partition function P of ℝ, the function that acts as α_i on each piece
   delineated by P is in MX. -/
   disjoint_union : ∀ (i : ℕ → (ℝ → X)) (P : ℝ → ℕ), (∀ n : ℕ, in_mx' (i n)) → (Measurable P) → (in_mx' (disjoint_function P i))
 
@@ -37,16 +55,11 @@ def discrete_qbs (X : Type*) : qbs X where
 
 instance : qbs Empty := discrete_qbs Empty
 
-/-  
-def bool_set : Set ℝ := { x : ℝ | x = 0 ∨ x = 1 }
-instance : Zero bool_set := ⟨⟨0, Or.inl rfl⟩⟩
-instance : qbs bool_set := discrete_qbs bool_set
--/ 
-noncomputable def ind (S : Set X) : X → ℝ := Set.indicator S (fun _ => 1) 
+noncomputable def ind (S : Set X) : X → ℝ := Set.indicator S (fun _ => 1)
 
 @[fun_prop]
 def qbs_morphism [qbs X] [qbs Y] (g : X → Y) : Prop :=
-  forall {f : ℝ → X}, in_mx f → in_mx (g ∘ f) 
+  forall {f : ℝ → X}, in_mx f → in_mx (g ∘ f)
 
 lemma id_qbs_morphism {_ : qbs X} : qbs_morphism (@id X) := by simp [qbs_morphism]
 
@@ -72,8 +85,8 @@ lemma in_mx_const [qbs X] (c : X) : in_mx (Function.const ℝ c) := by apply qbs
 @[fun_prop]
 lemma in_mx_comp_meas [qbs X] (f : ℝ → ℝ) (g : ℝ → X) : in_mx g → (Measurable f) → in_mx (g ∘ f) := by {
     intros
-    apply qbs.comp_meas <;> assumption 
-} 
+    apply qbs.comp_meas <;> assumption
+}
 
 @[fun_prop]
 lemma in_mx_disjoint_union [qbs X] (i : ℕ → (ℝ → X)) (P : ℝ → ℕ) : (∀ n : ℕ, in_mx (i n)) → (Measurable P) → (in_mx (disjoint_function P i)) := by {
@@ -96,14 +109,14 @@ def generate_qbs_from (mX : Set (ℝ → X)) : qbs X where
 
 lemma in_mx_generate_from {mX : Set (ℝ → X)} {g : ℝ → X} (hg : g ∈ mX) : in_mx[generate_qbs_from mX] g := .basic g hg
 
-lemma disjoint_function_preimage (P : ℝ → ℕ) (Fi : ℕ → (ℝ → X)) (A : Set X) : 
+lemma disjoint_function_preimage (P : ℝ → ℕ) (Fi : ℕ → (ℝ → X)) (A : Set X) :
     (disjoint_function P Fi)⁻¹' A = (⋃ i : ℕ, ((Fi i)⁻¹' A) ∩ (P⁻¹' {i})) := by {
     ext; unfold disjoint_function Set.preimage;
     rename_i x; constructor
     intros hx; rw [Set.mem_iUnion]
     use (P x); simp[*]; exact hx
-    intros hx;    
-    rw [Set.mem_iUnion] at hx; 
+    intros hx;
+    rw [Set.mem_iUnion] at hx;
     obtain ⟨i, hi⟩ := hx
     rcases hi with ⟨h1, h2⟩
     simp[*]; rw [h2]; exact h1
@@ -113,7 +126,7 @@ def measurable_to_qbs [MeasurableSpace X] : qbs X where
   in_mx' := Measurable
   comp_meas := by { intros f g hg hf; apply Measurable.comp hg hf }
   const := by { intros c; apply measurable_const }
-  disjoint_union := by { 
+  disjoint_union := by {
   intros i P hi hP; unfold Measurable;
   intros t ht; rw [disjoint_function_preimage]
   measurability
@@ -125,7 +138,7 @@ instance : qbs ℝ := measurable_to_qbs
 theorem generate_qbs_from_induction (mX : Set (ℝ → X)) (p: ∀ f : ℝ → X, in_mx[generate_qbs_from mX] g → Prop)
 (hbasic : ∀ f ∈ mX, ∀ hf, p f hf) ()-/
 
-def qbs_measurable_set [qbs X] : Set X → Prop := 
+def qbs_measurable_set [qbs X] : Set X → Prop :=
   (fun s => qbs_morphism (ind s))
 
 lemma ind_function_emptyset0 [qbs X] : ind (∅ : Set X)  = (fun _ => 0) := by { simp[ind] }
@@ -133,10 +146,10 @@ lemma ind_function_emptyset0 [qbs X] : ind (∅ : Set X)  = (fun _ => 0) := by {
 def zero_set : Set ℝ := {0}
 def one_set : Set ℝ := {1}
 
-noncomputable def ind_flip (x : ℝ) : ℝ := 
+noncomputable def ind_flip (x : ℝ) : ℝ :=
   haveI := Classical.decPred (· ∈ zero_set)
   haveI := Classical.decPred (· ∈ one_set)
-  zero_set.piecewise (fun x => x + 1) (one_set.piecewise (fun x => x - 1) (id)) x  
+  zero_set.piecewise (fun x => x + 1) (one_set.piecewise (fun x => x - 1) (id)) x
 
 lemma ind_flip_meas : Measurable ind_flip := by {
    unfold ind_flip
@@ -150,7 +163,7 @@ lemma ind_flip_meas : Measurable ind_flip := by {
 lemma ind_compl_flip [qbs X] (S : Set X) : ind (Sᶜ) = (ind_flip ∘ (ind S))  := by {
   funext x
   unfold ind ind_flip indicator zero_set one_set piecewise
-  simp; 
+  simp;
   split_ifs <;> try aesop
   /- all the cases are either trivial arithmetic or have contradictory hypotheses like 0 = 1-/
 }
@@ -187,12 +200,12 @@ theorem qbs_measurable_set' [qbs X] (S : Set X) : qbs_measurable_set S ↔ (∀ 
       have ht_sub : (ind S ∘ α) ⁻¹' {0, 1} ⊆ (ind S ∘ α)⁻¹' t;
       intros x hx; have h_in : (ind S ∘ α) x ∈ ({0, 1} : Set ℝ); exact hx; exact ht_01 h_in;
       ext x; constructor; simp; intros _; have hx' : x ∈ univ; simp; rw [<- h_preim_ind] at hx'; exact ht_sub hx';
-      rw [hS]; simp; 
+      rw [hS]; simp;
     }
     {
       have hS : (ind S ∘ α) ⁻¹' t = α ⁻¹' (Sᶜ);
       unfold Set.preimage ind Set.indicator; aesop;
-      measurability; 
+      measurability;
     }
   }
   {
@@ -204,7 +217,7 @@ theorem qbs_measurable_set' [qbs X] (S : Set X) : qbs_measurable_set S ↔ (∀ 
     }
     {
       have hS : (ind S ∘ α) ⁻¹' t = ∅ ;
-      unfold Set.preimage ind Set.indicator; aesop; 
+      unfold Set.preimage ind Set.indicator; aesop;
       measurability;
     }
   }
@@ -212,16 +225,16 @@ theorem qbs_measurable_set' [qbs X] (S : Set X) : qbs_measurable_set S ↔ (∀ 
 
 def qbs_to_measurable [qbs X] : MeasurableSpace X where
   MeasurableSet' := qbs_measurable_set
-  measurableSet_empty := by { simp [qbs_measurable_set]; simp[ind_function_emptyset0]; apply const_qbs_morphism } 
+  measurableSet_empty := by { simp [qbs_measurable_set]; simp[ind_function_emptyset0]; apply const_qbs_morphism }
   measurableSet_compl := by { intros s hs; apply qbs_measurable_set_compl; exact hs }
-  measurableSet_iUnion := by { 
-  intros f hf; rw [qbs_measurable_set']; intros α hα; 
+  measurableSet_iUnion := by {
+  intros f hf; rw [qbs_measurable_set']; intros α hα;
   have h : (α ⁻¹' ⋃ i, f i) = (⋃ i, α ⁻¹' f i); aesop;
-  rw [h]; apply MeasurableSet.iUnion; intros b; 
+  rw [h]; apply MeasurableSet.iUnion; intros b;
   suffices h : qbs_measurable_set (f b);
   have  qbs_meas' : (∀ β : ℝ → X, in_mx β → MeasurableSet (β ⁻¹' (f b)))
   rw [<- qbs_measurable_set' (f b)]; exact h;
-  exact qbs_meas' α hα; 
+  exact qbs_meas' α hα;
   exact hf b;
 }
 
@@ -234,7 +247,7 @@ lemma qbs_to_measurable_real (S : Set ℝ) : qbs_measurable_set S ↔ Measurable
     simp at hS; suffices h : in_mx id; exact hS h; apply measurable_id;
     intros hS; unfold qbs_measurable_set; unfold qbs_morphism; intros f hf;
     have h_meas : Measurable f := hf; apply Measurable.comp;
-    apply Measurable.indicator; simp; exact hS; exact h_meas;  
+    apply Measurable.indicator; simp; exact hS; exact h_meas;
 }
 
 @[simp]
@@ -253,16 +266,15 @@ lemma real_qbs_morphism [qbs X] (f : ℝ → X) : in_mx f ↔ qbs_morphism f := 
 
 instance [qbs X] : MeasurableSpace X := qbs_to_measurable
 
-/-- WARNING: There is a really tricky type coercion here that I can't figure out how to get Lean to play nicely with. It's because 
+/-- WARNING: There is a really tricky type coercion here that I can't figure out how to get Lean to play nicely with. It's because
     there are two MeasurableSpace ℝ's lying around, namely the borel sets and the qbs_to_measurable ℝ sets from the above instance. if something
-    isn't typechecking nicely surrounding measurable things on ℝ, it's almost certainly due to this problem, where a combination of rewriting with 
+    isn't typechecking nicely surrounding measurable things on ℝ, it's almost certainly due to this problem, where a combination of rewriting with
     qbs.MeasurableSet_def and qbs_to_measurable_real should save you.
 --/
 
 lemma qbs.MeasurableSet_def [qbs X] (S : Set X) : MeasurableSet S ↔ qbs_measurable_set S := Iff.rfl
 
 instance [MeasurableSpace X] : qbs X := measurable_to_qbs
-
 
 lemma qbs_morphism_measurable [qbs X] [qbs Y] (f: X → Y) : qbs_morphism f → Measurable f := by
 {
@@ -284,7 +296,7 @@ lemma in_mx_measurable [qbs X] (f : ℝ → X) : in_mx f → Measurable f := by 
 lemma qbs_to_measurable_set [MeasurableSpace X] (S : Set X) : MeasurableSet S → qbs_measurable_set S := by {
     intros hS; unfold qbs_measurable_set; unfold qbs_morphism; intros f hf;
     have h_meas : Measurable f := hf; apply Measurable.comp;
-    apply Measurable.indicator; simp; exact hS; exact h_meas;  
+    apply Measurable.indicator; simp; exact hS; exact h_meas;
 }
 
 theorem qbs_to_measurable_morphism [qbs X] [MeasurableSpace Y] (f: X → Y) : qbs_morphism f ↔ Measurable f := by
@@ -299,7 +311,7 @@ theorem qbs_to_measurable_morphism [qbs X] [MeasurableSpace Y] (f: X → Y) : qb
   {
     intros hf; intros α hα; intros t ht; have h : qbs_measurable_set (f ⁻¹' t); apply hf; exact ht;
     have h1 : MeasurableSet (α ⁻¹' (f ⁻¹' t)); have hα' : Measurable α; apply in_mx_measurable; exact hα;
-    apply MeasurableSet.preimage; rw [qbs.MeasurableSet_def]; exact h; exact hα'; 
+    apply MeasurableSet.preimage; rw [qbs.MeasurableSet_def]; exact h; exact hα';
     aesop;
   }
 }
@@ -319,16 +331,16 @@ def qbs_product (P: I → Type*) [Π i : I, qbs (P i)] : qbs (Π i : I, P i) whe
   in_mx' f := ∀ i : I, in_mx (proj_i f i)
   comp_meas := by { simp; intros f g hg hf i; apply in_mx_comp_meas; apply hg; exact hf; }
   const := by { simp; intros c i; apply in_mx_const; }
-  disjoint_union := by { simp; intros Fi π hFi hπ i;  unfold disjoint_function; sorry /- todo-/  }
+  disjoint_union := by { simp; intros Fi π hFi hπ i; exact in_mx_disjoint_union (fun n => proj_i (Fi n) i) π (fun n => hFi n i) hπ; }
 
 def two_element : Set ℕ := { 0, 1 }
-def binary {X Y : Type} : two_element → Type := (fun x => if x = ⟨1, by { simp [two_element]}⟩ then Y else X) 
+def binary {X Y : Type} : two_element → Type := (fun x => if x = ⟨1, by { simp [two_element]}⟩ then Y else X)
 
 def qbs_binary_product (X Y : Type*) [qbs X] [qbs Y] : qbs (X × Y) where
   in_mx' f := in_mx (Prod.fst ∘ f) ∧ in_mx (Prod.snd ∘ f)
-  comp_meas := sorry
-  const := sorry
-  disjoint_union := sorry
+  comp_meas := by  { simp; intros f g hg1 hg2 hf; constructor <;> rw [<- comp_assoc] <;> apply in_mx_comp_meas <;> assumption; }
+  const := by { simp; intros c b; constructor <;> apply in_mx_const; }
+  disjoint_union := by { simp; intros F π hF hπ; simpa only [comp_assoc] using ⟨ in_mx_disjoint_union (fun n => Prod.fst ∘ F n) π (fun n => (hF n).1) hπ, in_mx_disjoint_union (fun n => Prod.snd ∘ F n) π (fun n => (hF n).2) hπ ⟩}
 
 def qbs_rv (X : Type*) [qbs X] := { f : ℝ → X // in_mx f }
 
@@ -340,19 +352,31 @@ def qbs_morph.coe [qbs X] [qbs Y] : qbs_morph X Y → (X → Y) := Subtype.val
 @[coe]
 def qbs_rv.coe [qbs X] : qbs_rv X → (ℝ → X) := Subtype.val
 
-def uncurry {X Y : Type*} [qbs X] [qbs Y] (f : ℝ → qbs_morph X Y) : ((ℝ × X) → Y) :=
+def uncurry_qbs {X Y : Type*} [qbs X] [qbs Y] (f : ℝ → qbs_morph X Y) : ((ℝ × X) → Y) :=
   fun p => (f (Prod.fst p)).coe (Prod.snd p)
 
 instance [qbs X] : qbs (ℝ × X) := qbs_binary_product ℝ X
 
 def uncurry_morph {X Y : Type*} [qbs X] [qbs Y] (f : ℝ → qbs_morph X Y) : Prop :=
-  qbs_morphism (uncurry f)
+  qbs_morphism (uncurry_qbs f)
 
-def qbs_function_space (X Y : Type) [qbs X] [qbs Y] : qbs (qbs_morph X Y) where
+def qbs_function_space (X Y :   Type) [qbs X] [qbs Y] : qbs (qbs_morph X Y) where
   in_mx' α := uncurry_morph α
-  comp_meas := sorry
-  const := sorry
-  disjoint_union := sorry
+  comp_meas := by {
+    intros f g hg hf;
+    intros φ hin; rcases hin with ⟨ h_1, h_2 ⟩;
+    have h_1' : in_mx (fun x => f ((φ x).1)); have hf' : in_mx f := hf; rw [real_qbs_morphism] at *; fun_prop;
+    let φ' : ℝ → ℝ × X := fun x => (f ((φ x).1), (φ x).2); have hφ' : in_mx φ'; constructor <;> assumption;
+    have : in_mx ((fun p => (g p.1).coe p.2) ∘ φ') := hg hφ'; simpa [uncurry_qbs, comp, comp_assoc] using this  }
+  const := by { intros c; intros φ hin; rcases hin with ⟨_, h_snd⟩; apply c.prop; exact h_snd; }
+  disjoint_union := by {
+    intros i P hi hP; unfold uncurry_morph uncurry_qbs qbs_morphism at *; simp at *; intros φ hin;
+    have hm : ∀ n, in_mx (uncurry_qbs (i n) ∘ φ); intros n; apply hi; assumption;
+    unfold disjoint_function uncurry_qbs comp at *; simp at *;
+    let j:  ℕ → ℝ → Y := fun n x => (i n (φ x).1).coe (φ x).2;
+    have hmeas_P' : Measurable (fun x => P (φ x).1); apply hP.comp; exact hin.1;
+    have : in_mx (disjoint_function (fun x => P (φ x).1) j) := in_mx_disjoint_union _ _ hm hmeas_P';
+    exact this; }
 
 instance [qbs X] : Coe (qbs_morph X ℝ) (X → ℝ) := {coe := qbs_morph.coe}
 instance [qbs X] : Coe (qbs_rv X) (ℝ → X) := {coe := qbs_rv.coe}
@@ -363,24 +387,24 @@ structure qbs_ProbMeasure (X : Type*) [qbs X] where
 
 def qbs_ProbMeasure.of (X : Type*) [qbs X] (f : qbs_rv X) (α : ProbabilityMeasure ℝ) : qbs_ProbMeasure X := { meas := α, rv := f}
 
-noncomputable def integrate [qbs X] (μ : qbs_ProbMeasure X) (f : qbs_morph X ℝ) : ℝ := ∫ x, (f.coe (μ.rv.coe x)) ∂ μ.meas 
+noncomputable def integrate [qbs X] (μ : qbs_ProbMeasure X) (f : qbs_morph X ℝ) : ℝ := ∫ x, (f.coe (μ.rv.coe x)) ∂ μ.meas
 
-def measures_equiv [qbs X] (μ σ : qbs_ProbMeasure X) : Prop := 
+def measures_equiv [qbs X] (μ σ : qbs_ProbMeasure X) : Prop :=
   ∀ f : qbs_morph X ℝ, integrate μ f = integrate σ f
 
-lemma measures_equiv_Equivalence [qbs X] : Equivalence (fun (μ σ : qbs_ProbMeasure X) => measures_equiv μ σ) := { 
-  refl := by { simp [measures_equiv]; }, symm := by { intros x y h; simp [measures_equiv] at *; intros f; symm; exact h f;}, 
+lemma measures_equiv_Equivalence [qbs X] : Equivalence (fun (μ σ : qbs_ProbMeasure X) => measures_equiv μ σ) := {
+  refl := by { simp [measures_equiv]; }, symm := by { intros x y h; simp [measures_equiv] at *; intros f; symm; exact h f;},
   trans := by { intros x y z h1 h2; simp [measures_equiv] at *; intros f; specialize h2 f; specialize h1 f; rw [<- h2]; exact h1 }
 }
 
-def qbs_measures.setoid (X : Type*) [qbs X] : Setoid (qbs_ProbMeasure X) := Setoid.mk measures_equiv measures_equiv_Equivalence 
+def qbs_measures.setoid (X : Type*) [qbs X] : Setoid (qbs_ProbMeasure X) := Setoid.mk measures_equiv measures_equiv_Equivalence
 
 def qbs_measures (X : Type*) [qbs X] := Quotient.mk (qbs_measures.setoid X)
 
 abbrev qspace (X : Type*) [qbs X] := Quotient (qbs_measures.setoid X)
 
 def qbs_measures_qbs (X : Type*) [qbs X] : qbs (qspace X) where
-  in_mx' β := ∃ α : qbs_rv X, ∃ g : ℝ → ProbabilityMeasure ℝ, ∀ r : ℝ, β r = Quotient.mk'' (qbs_ProbMeasure.of X α (g r)) 
+  in_mx' β := ∃ α : qbs_rv X, ∃ g : ℝ → ProbabilityMeasure ℝ, ∀ r : ℝ, β r = Quotient.mk'' (qbs_ProbMeasure.of X α (g r))
   comp_meas := sorry
   const := sorry
   disjoint_union := sorry
@@ -392,25 +416,25 @@ instance [qbs X] : qbs (qspace X) := qbs_measures_qbs X
 
 noncomputable def dirac {X : Type*} (x : X) [qbs X] : qbs_ProbMeasure X := {
   meas := diracProba 0
-  rv := ⟨(fun (r : ℝ) => x), by { apply in_mx_const }⟩ 
+  rv := ⟨(fun (r : ℝ) => x), by { apply in_mx_const }⟩
 }
 
 noncomputable def giry_bind [MeasurableSpace X] [MeasurableSpace Y] (f: X → ProbabilityMeasure Y) (μ : ProbabilityMeasure X) : ProbabilityMeasure Y :=
-  ⟨Measure.bind μ (ProbabilityMeasure.toMeasure ∘ f), by { 
+  ⟨Measure.bind μ (ProbabilityMeasure.toMeasure ∘ f), by {
   rw [isProbabilityMeasure_iff]; rw [bind_apply]; have H : ∀ a : X, ((ProbabilityMeasure.toMeasure ∘ f) a) univ = 1;
   intros a; rw [<- isProbabilityMeasure_iff]; have H2 : IsProbabilityMeasure (f a).toMeasure := (f a).prop;
   apply H2; aesop; measurability; sorry}⟩ /- This is a stupid implementation detail in the implementation of the Giry monad in Mathlib, and not actually axiomatizing anything-/
 
 noncomputable def qbs_giry_unit (X : Type*) [qbs X] : qbs_morph X (qspace X) :=
-  ⟨fun x => Quotient.mk'' (dirac x), by { sorry }⟩ 
+  ⟨fun x => Quotient.mk'' (dirac x), by { sorry }⟩
 
 lemma dumb_coercion {X Y : Type*} [qbs X] [qbs Y] (f : qbs_morph X (qspace Y)) (α : qbs_rv X) : (qbs_measures_qbs Y).in_mx' (f.coe ∘ α.coe) := by {
     unfold qbs_rv qbs_morph at *; aesop;
 }
 
 noncomputable def qbs_giry_bind {X Y : Type*} [qbs X] [qbs Y] (f : qbs_morph X (qspace Y)) (μ : qbs_ProbMeasure X) : qspace Y :=
-  Quotient.mk'' (qbs_ProbMeasure.of Y (pick_rv (f.coe ∘ (μ.rv).coe) (dumb_coercion f μ.rv)) 
-  (giry_bind (pick_prob (f.coe ∘ (μ.rv).coe) (dumb_coercion f μ.rv)) μ.meas)) 
+  Quotient.mk'' (qbs_ProbMeasure.of Y (pick_rv (f.coe ∘ (μ.rv).coe) (dumb_coercion f μ.rv))
+  (giry_bind (pick_prob (f.coe ∘ (μ.rv).coe) (dumb_coercion f μ.rv)) μ.meas))
 /- TODO I think something is subtly wrong above since we are making two different choices to instantiate pick_rv and pick_prob whereas they should be the same pair-/
 
 notation μ " >>= " f => qbs_giry_bind f μ
@@ -418,51 +442,3 @@ notation μ " >>= " f => qbs_giry_bind f μ
 theorem giry_monad_unit {X : Type*} [qbs X] : ∀ μ : qbs_ProbMeasure X, (μ >>= qbs_giry_unit X) = Quotient.mk'' μ := sorry
 
 theorem giry_monad_unit_bind {X : Type*} [qbs X] : ∀ x : X, ∀ f : qbs_morph X (qspace X), ((dirac x) >>= f) = f.coe x := sorry
-
-
-
-
-
-
-/- Here's some explicit category theory below, I don't find Lean's mechanisms to be very useful at all for these -/
-
-
-
-open CategoryTheory
-
-@[to_additive existing qbs_category]
-def qbs_category : Type (u + 1) := Bundled qbs 
-
-namespace qbs_category
-
-/- a default coercion between a category of qbs's and a collection of objects and morphisms-/
-instance : CoeSort qbs_category Type* := Bundled.coeSort
-
-/- recover a qbs from an object in a category -/
-instance (X : qbs_category) : qbs X := X.str
-
-/- turn a qbs into an object in the category -/
-def of (X : Type u) [qb : qbs X] : qbs_category := ⟨X, qb⟩ 
-
-/- coercion version of the above -/
-@[simp]
-theorem coe_of (X : Type u) [qbs X] : (of X : Type u) = X := rfl 
-
-/- the morphisms of our category -/
-instance unbundledHom : UnbundledHom @qbs_morphism :=
-  ⟨@id_qbs_morphism, @qbs_morphism_comp⟩
-
-/- a proof this forms a large (concrete) category-/
-deriving instance LargeCategory for qbs_category
-
-instance : ConcreteCategory qbs_category := by
-  unfold qbs_category
-  infer_instance
-
-instance : Inhabited qbs_category := ⟨qbs_category.of Empty⟩
-attribute [local instance] ConcreteCategory.instFunLike
-
-end qbs_category
-
-
-
